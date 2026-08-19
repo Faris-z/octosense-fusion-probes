@@ -1,0 +1,20 @@
+# --- Python environment ---
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# --- Upstream tooling repo (third-party, re-clone with the command in README) ---
+/OctoSense/
+
+# --- Raw dataset (many GB - downloaded per-machine, never committed) ---
+/octosense/
+
+# --- Phase 3 deliverables: portable but far too large for git.
+# These are the artifacts you physically copy to the PC (drive / cloud), not push.
+/cache/
+manifest.parquet
+
+# --- Local scratch ---
+*.log
+.DS_Store

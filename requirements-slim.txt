@@ -1,0 +1,21 @@
+# Slim, pip-only dependency set for OctoSense Phases 0-3 (laptop, CPU, no torch/torchcodec/ffmpeg needed).
+# Full repo requirements.txt also pulls heavy stuff we don't need for this phase:
+# faiss/sentence-transformers (semantic search), ultralytics/transformers (GT generation we
+# don't run - we use the shipped depth/seg labels), open3d/ouster-sdk/apriltags (lidar_cal -
+# we use the platform's existing calibration, not recalibrating), torch/torchvision/torchcodec
+# (GPU inference, belongs to the PC phase). Video frame extraction here uses opencv instead of
+# torchcodec, so no system FFmpeg install is required either.
+
+numpy
+pandas
+h5py
+hdf5plugin
+pyarrow
+huggingface_hub
+typer<0.26
+opencv-python-headless
+matplotlib
+scipy
+pyproj
+tqdm
+jupyterlab
