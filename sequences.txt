@@ -1,0 +1,70 @@
+# OctoSense sequence selection - Phase 1
+#
+# Format:  <bag_id>  <session>  <condition>  <split_role>
+# Chosen from the 371 car sequences in metadata.parquet. Rationale below.
+#
+# ---------------------------------------------------------------------------
+# WHY THESE: day/night sequences are ROUTE-MATCHED
+# ---------------------------------------------------------------------------
+# The robustness claim is "fusion helps more when a sensor degrades". If the night
+# sequences also happen to be a different route, any performance drop confounds
+# darkness with a change of scene. So night sequences are paired with the daytime
+# sequence whose GPS bounding box overlaps most (IoU), giving a near-controlled
+# comparison where lighting is the main thing that changed.
+#
+#   01_04-20_33_11 (night) vs 01_04-14_12_18 (day)  IoU 0.982  - SAME DAY, same route
+#   01_15-20_09_30 (night) vs 01_14-08_22_52 (day)  IoU 0.944  - consecutive days
+#
+# ---------------------------------------------------------------------------
+# GROUND-TRUTH AVAILABILITY (verified against the hub file listing, not assumed)
+# ---------------------------------------------------------------------------
+#   data.h5  (LiDAR/IMU/GPS/CAN) : 100% of day AND night sequences
+#   depth                        : 100% of day AND night sequences
+#   segmentation                 : 100% of day, 0% of night  <-- HARD CONSTRAINT
+#   RGB / stereo / thermal       : 100% of both
+#
+# Consequence: depth and steering support the full day->night robustness study.
+# SEGMENTATION CANNOT - there is no night ground truth to score against, so the
+# seg probe is a daytime-only, in-distribution experiment.
+#
+# (Note: upstream's download_octosense.py comments depth as "car daytime". That
+# comment is incorrect - depth is LiDAR-derived and present for every night
+# sequence. Verified by listing actual repo files in scripts/check_gt_files.py.)
+#
+# ---------------------------------------------------------------------------
+# DEGRADED SEQUENCES
+# ---------------------------------------------------------------------------
+# Only 4 exist in the whole car set, and all 4 are in the official test split.
+# Three are night+degraded (confounding two effects at once), one is day+degraded.
+# Both are included deliberately: the day+degraded sequence is what lets you
+# separate "sensor degraded" from "it is dark".
+#
+# Also note `degraded` and `sensor_dropout` are DIFFERENT flags with zero overlap -
+# the 4 degraded sequences have no dropout recorded, and the 5 sequences with real
+# dropouts are all flagged degraded=False. Of those 5 dropouts, 3 affect only the
+# event stream, which this project does not download.
+#
+# ---------------------------------------------------------------------------
+
+# --- TRAIN/VAL: daytime, clear ---
+rosbag2_2026_01_04-14_12_18   sess7    day_clear          train
+rosbag2_2026_01_14-08_22_52   sess9    day_clear          train
+
+# --- TEST: night, route-matched to the two above ---
+rosbag2_2026_01_04-20_33_11   sess7    night              test
+rosbag2_2026_01_15-20_09_30   sess9    night              test
+
+# --- TEST: degraded sensors ---
+rosbag2_2026_01_08-20_47_06   sess8    night_degraded     test
+rosbag2_2026_01_09-07_47_28   sess8    day_degraded       test
+
+# ---------------------------------------------------------------------------
+# DOWNLOAD SIZE (modalities data,depth,seg,rgb,ir - events excluded)
+# ---------------------------------------------------------------------------
+#   total ~55.7 GB across the 6 sequences; skipping events saves ~80 GB (59%)
+#   dominated by data.h5 (~28 GB) and depth (~25 GB); RGB video is only ~1.5 GB
+#   night RGB is ~5x smaller than day - H.265 compresses dark footage well
+#
+# Suggested order: pull the 01_04 matched pair FIRST (~23 GB), validate the whole
+# Phase 3 pipeline on it, then fetch the remaining 4. Avoids committing hours of
+# download before knowing the cleaning/manifest/cache code works.
